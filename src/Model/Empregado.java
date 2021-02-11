@@ -36,6 +36,14 @@ public class Empregado extends Beneficiario {
 	}
 	
 	@Override
+	public void atualizarDb(int id) throws SQLException {
+		super.atualizarDb(id);
+		Statement statement = this.getConnection().createStatement();
+		String update = "UPDATE empregado SET isAposentado = " + (this.isAposentado() ? 1 : 0) + " WHERE beneficiarioId = " + id;
+		statement.execute(update);
+	}
+	
+	@Override
 	public String toString() {
 		return super.toString() + (this.isAposentado ? " aposentado" : " não aposentado");
 	}

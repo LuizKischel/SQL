@@ -30,8 +30,14 @@ public abstract class Beneficiario extends Pessoa {
 							+ "'" + this.getEstado() + "',"
 									+ this.getMesesBeneficio() + ","
 									+ this.getValorBeneficio() + ","
-									+ "(SELECT id FROM categoria WHERE nome LIKE '"+this.getCategoria().getDescricao()+"'))";				
+									+ "(SELECT id FROM categoria WHERE descricao LIKE '"+this.getCategoria().getDescricao()+"'))";				
 		statement.execute(insert);
+	}
+	
+	public void atualizarDb(int id) throws SQLException {
+		Statement statement = this.getConnection().createStatement();
+		String update = "UPDATE beneficiario SET nomeCompleto = '"+this.getNomeCompleto()+"', dataNascimento = '"+ new SimpleDateFormat("yyyy-MM-dd").format(this.getDataNascimento())+"', estado = '"+this.getEstado()+"', categoriaId = " + "(SELECT id FROM categoria WHERE descricao LIKE '"+this.getCategoria().getDescricao()+"'), valorBeneficio = " + this.getValorBeneficio() + ", mesesBeneficio = " + this.getMesesBeneficio() + " WHERE id = " + id;          
+		statement.execute(update);
 	}
 	
 	public String toString() {

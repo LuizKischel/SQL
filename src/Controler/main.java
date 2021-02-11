@@ -4,70 +4,80 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Scanner;
 
+import Connection.ConnectionFactory;
 import Model.Beneficiario;
 import Model.Categoria;
 
 public class main {
 
-	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, IOException {	
 		
-		ArrayList<Beneficiario> beneficiarios = new ArrayList<Beneficiario>();
-		Beneficiario beneficiarioAtual;
 		do {
-			try {
-				beneficiarioAtual = cadastro();
-				beneficiarios.add(beneficiarioAtual);
-				System.out.println("\nBENEFICIÁRIO CADASTRADO:\n");
-				System.out.println(beneficiarioAtual.toString());
-				System.out.println(beneficiarioAtual.beneficio());
-				System.out.println(beneficiarioAtual.regrasAplicadas());
-			} catch (Exception e) {
-				e.printStackTrace();
+			int acao = menuCadastro();
+			if(acao == 0) {
+				break;
 			}
-			mostrarDadosBeneficiarios(beneficiarios);
-		} while(cadastrarNovoBeneficiario());
-		
-		System.out.println("Cadastro de beneficiários finalizado.");
+			else if (acao == 1) {
+				loopCadastro();
+			}
+			else if (acao == 2) {
+				loopUpdate();
+			}
+			else if (acao == 3) {
+				loopDelete();
+			}
+			else if (acao == 4) {
+				listarBeneficiario();
+			}
+			else if(acao == 5) {
+				mostrarDadosBeneficiarios();
+			}
+		} while (true);
+		System.out.println("Programa Finalizado!!!!!!");
 	}
 	
-	public static void mostrarDadosBeneficiarios(ArrayList<Beneficiario> beneficiarios) {
+	public static Connection connection = new ConnectionFactory().getConnection("root", "", 3306, "beneficiario");
+	
+	public static void mostrarDadosBeneficiarios() throws SQLException {
+		String queryTotal = "SELECT COUNT(*) AS total FROM beneficiario";	
+		Statement statement = connection.createStatement();
+		ResultSet resultTotal = statement.executeQuery(queryTotal);
+		resultTotal.next();
 		System.out.println("\nRESUMO DOS BENEFICIÁRIOS:\n");
-		System.out.println("Usuários lidos: " + String.valueOf(beneficiarios.size()));
-		ArrayList<Beneficiario> saoBeneficiarios = new ArrayList<Beneficiario>();
-		double valorTotalConcedido = 0;
-		for (Beneficiario beneficiario : beneficiarios) {
-			if(beneficiario.isBeneficiario()) {
-				valorTotalConcedido += beneficiario.getValorBeneficio();
-				saoBeneficiarios.add(beneficiario);
-			}
-		}
-		int beneficiariosMaior = 2;
-		System.out.println("Total de beneficários: " + String.valueOf(saoBeneficiarios.size()));
-		System.out.println("Valor total concedido: R$ " + String.valueOf(Math.round(valorTotalConcedido * 100.0) / 100.0));
-		saoBeneficiarios.sort((x, y) -> x.compareValor(y));
+		System.out.println("Usuários lidos: " + String.valueOf(resultTotal.getInt("total")));
+		String queryTotalisBeneficiario = "SELECT COUNT(*) AS total FROM beneficiario WHERE valorBeneficio != 0";
+		ResultSet resultTotalisBeneficiario = statement.executeQuery(queryTotalisBeneficiario);
+		resultTotalisBeneficiario.next();
+		
+		
+		System.out.println("Total de beneficários: " + String.valueOf(resultTotalisBeneficiario.getInt("total")));
+		String queryTotalValorBeneficio = "SELECT SUM(valorBeneficio) AS total FROM beneficiario";
+		ResultSet resultTotalValorBeneficio = statement.executeQuery(queryTotalValorBeneficio);
+		resultTotalValorBeneficio.next();
+		System.out.println("Valor total concedido: R$ " + String.valueOf(Math.round(resultTotalValorBeneficio.getDouble("total") * 100.0) / 100.0));
 		System.out.println("\nBeneficiários que recebem maior valor:");
-		for (int i = 0; i < saoBeneficiarios.size(); i++) {
-			if(i >= beneficiariosMaior) {
-				break;
-			}
-			Beneficiario beneficiario = saoBeneficiarios.get(i);
-			System.out.println("> " + beneficiario.getNomeCompleto() + " - R$ " + String.valueOf(beneficiario.getValorBeneficio()));
+		String queryBeneficiarioMaiorValor = "SELECT valorBeneficio, nomeCompleto FROM beneficiario ORDER BY valorBeneficio DESC LIMIT 2";
+		ResultSet resultBeneficiarioMaiorValor = statement.executeQuery(queryBeneficiarioMaiorValor);
+		while (resultBeneficiarioMaiorValor.next()) {
+			System.out.println("> " + resultBeneficiarioMaiorValor.getString("nomeCompleto") + " - R$ " + String.valueOf(resultBeneficiarioMaiorValor.getDouble("valorBeneficio")));
 		}
-		saoBeneficiarios.sort((x, y) -> x.compareTempo(y));
-		System.out.println("\nBeneficiários que recebem por mais tempo:");
-		for (int i = 0; i < saoBeneficiarios.size(); i++) {
-			if(i >= beneficiariosMaior) {
-				break;
-			}
-			Beneficiario beneficiario = saoBeneficiarios.get(i);
-			System.out.println("> " + beneficiario.getNomeCompleto() + " - " + String.valueOf(beneficiario.getMesesBeneficio()) + " meses");
+		
+		String queryBeneficiarioMaiorMes = "SELECT mesesBeneficio, nomeCompleto FROM beneficiario ORDER BY mesesBeneficio DESC LIMIT 2";
+		ResultSet resultBeneficiarioMaiorMes = statement.executeQuery(queryBeneficiarioMaiorMes);
+		System.out.println("\nBeneficiários que recebem maior numero de meses: ");
+		while (resultBeneficiarioMaiorMes.next()) {
+			System.out.println("> " + resultBeneficiarioMaiorMes.getString("nomeCompleto") + " - " + String.valueOf(resultBeneficiarioMaiorMes.getInt("mesesBeneficio")) + " meses.");
 		}
 	}
 	
@@ -113,4 +123,93 @@ public class main {
 		return false;
 	}
 
+	public static int menuCadastro() throws IOException {
+		System.out.println("MENU");
+		System.out.println("0 - Sair\n1 - Novo Beneficiario\n2 - Atualizar Beneficiario\n3 - Deletar Beneficiario\n4 - Listar Beneficiarios\n5 - Informações");
+		Scanner scan = new Scanner(System.in);
+		int acao;
+		do {
+			acao = scan.nextInt();
+		} while (acao < 0 || acao > 5);
+		limparConsole();
+		return acao;
+	}
+	
+	public static void limparConsole() {
+		for (int i = 0; i < 3; i++) {
+			System.out.println("");
+		}
+	}
+	
+	public static void listarBeneficiario() throws SQLException {
+		Statement statement = connection.createStatement();
+		String query = "SELECT beneficiario.nomeCompleto, beneficiario.id, categoria.descricao FROM beneficiario INNER JOIN categoria ON categoria.id = beneficiario.categoriaid";
+		ResultSet result = statement.executeQuery(query);
+		System.out.println("Lista de Beneficiarios: ");
+		while (result.next()) {
+			System.out.println(result.getInt("id") + ") " + result.getString("nomeCompleto") + " - " + result.getString("descricao"));
+		}
+	}
+	
+	public static void loopCadastro() throws SQLException {
+		Beneficiario beneficiarioAtual;	
+		do {
+			try {
+				beneficiarioAtual = cadastro();
+				beneficiarioAtual.inserirDb();
+				System.out.println("\nBENEFICIÁRIO CADASTRADO:\n");
+				System.out.println(beneficiarioAtual.toString());
+				System.out.println(beneficiarioAtual.beneficio());
+				System.out.println(beneficiarioAtual.regrasAplicadas());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			mostrarDadosBeneficiarios();
+		} while(cadastrarNovoBeneficiario());
+		System.out.println("Cadastro de beneficiários finalizado.");
+	}
+
+	public static void loopUpdate() throws SQLException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		Statement statement = connection.createStatement();
+		Scanner scan = new Scanner(System.in);
+		do {
+			listarBeneficiario();
+			System.out.println("Digite 0 para cancelar!!");
+			System.out.println("Digite o ID do beneficiario que deseja atualizar: ");
+			int id = scan.nextInt();
+			if(id == 0) {
+				break;
+			}
+			else {
+				Beneficiario beneficiario = cadastro();
+				beneficiario.atualizarDb(id);
+			}
+		} while (true);
+		
+	}
+	
+	public static void loopDelete() throws SQLException {
+		Statement statement = connection.createStatement();
+		Scanner scan = new Scanner(System.in);
+		do {
+			listarBeneficiario();
+			System.out.println("Digite 0 para cancelar!!");
+			System.out.println("Digite o ID do beneficiario que deseja deletar: ");
+			int id = scan.nextInt();
+			if(id == 0) {
+				break;
+			}
+			else {
+				String comandoDelete = "DELETE FROM beneficiario WHERE id = " + id; 
+				statement.execute(comandoDelete);
+			}
+		} while (true);
+	}
+
 }
+
+
+
+
+
+

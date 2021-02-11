@@ -30,6 +30,14 @@ public class Desempregado extends Beneficiario {
 		String insert = "INSERT INTO desempregado (beneficiarioId, mesesDesempregado) VALUES (LAST_INSERT_ID(),"+(this.getMesesDesempregado())+")";
 		statement.execute(insert);
 	}
+	
+	@Override
+	public void atualizarDb(int id) throws SQLException {
+		super.atualizarDb(id);
+		Statement statement = this.getConnection().createStatement();
+		String update = "UPDATE desempregado SET mesesDesempregado = " + this.getMesesDesempregado() + " WHERE beneficiarioId = " + id;
+		statement.execute(update);
+	}
 
 	@Override
 	public String toString() {

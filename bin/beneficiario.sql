@@ -102,7 +102,7 @@ DROP TABLE IF EXISTS `empregado`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `empregado` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `benficiarioId` int(10) unsigned NOT NULL,
+  `beneficiarioId` int(10) unsigned NOT NULL,
   `isAposentado` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `beneficiarioId_empregado_idx` (`benficiarioId`),
